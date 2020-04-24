@@ -37,6 +37,12 @@ namespace Joueur.cs.Games.Chess
             //r1b1k1nr/pp1p1p1p/2pb4/4p1Bq/1n1P4/2NQ3N/PPP1PPPP/R3KBR1 w Qkq - 3 11
             //http://vis.siggame.io/?log=http%3A%2F%2Fcashdomain.tk%3A3080%2Fgamelog%2FChess-MyOwnGamesession-2020.04.21.04.38.34.523
             //rnbqk1nr/pppp1p2/6pp/1N2p3/1b5P/3P4/PPP1PPP1/R1BQKBNR w KQkq - 1 5
+            /*
+            b5c3: -13
+            c2c3: -9
+            c1d2: -13
+            d1d2: -25
+            */
             string FEN= "rnbqk1nr/pppp1p2/6pp/1N2p3/1b5P/3P4/PPP1PPP1/R1BQKBNR w KQkq - 1 5";
             b.updateBoard(FEN);
 
