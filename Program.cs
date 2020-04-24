@@ -43,7 +43,13 @@ namespace Joueur.cs.Games.Chess
             c1d2: -13
             d1d2: -25
             */
-            string FEN= "rnbqk1nr/pppp1p2/6pp/1N2p3/1b5P/3P4/PPP1PPP1/R1BQKBNR w KQkq - 1 5";
+            /*
+            rnbqkbnr/ppppppp1/7p/8/8/5N2/PPPPPPPP/RNBQKB1R w KQkq - 0 2
+            */
+            //8/5k1q/3P4/6K1/PP6/4P3/4P3/8 b - - 3 43
+            //rnb3n1/pppp4/5k2/8/8/P3P3/PBPPP1K1/R7 b - - 2 21
+            //r3k2R/pp6/1n6/2p1p3/8/N3K1P1/PPPBPP2/8 b q - 2 20
+            string FEN= "r3k2R/pp6/1n6/2p1p3/8/N3K1P1/PPPBPP2/8 b q - 2 20";
             b.updateBoard(FEN);
 
             string selectedMove = algo.AlphaBetaSearch(ref b,2);
@@ -79,8 +85,8 @@ namespace Joueur.cs.Games.Chess
             //rnb1kbnr/ppppq3/8/8/8/N6p/PPPPPPP1/1RBQKB1R w Kkq - 0 8 check numbers
             string FEN= "rnb1kbnr/ppppq3/8/8/8/N6p/PPPPPPP1/1RBQKB1R w Kkq - 0 8";
             b.updateBoard(FEN);
-            List<string> moves= new List<string>(b.selectPiece(Mode.select));
-            //List<string> moves= new List<string>(b.selectPiece(1,2));
+            List<string> moves= new List<string>(b.move_select(Mode.select));
+            //List<string> moves= new List<string>(b.move_select(1,2));
             Console.WriteLine(b);
             G.printlines(moves);
             string selectedMove;
@@ -98,193 +104,6 @@ namespace Joueur.cs.Games.Chess
             }
             Console.WriteLine("Selected: "+selectedMove);
             Console.WriteLine("SCORE: {0},{1}",b.BlackScore,b.WhiteScore);
-        }
-        
-        static void fixcheckmatemove()
-        {
-            Console.WriteLine("fixcheckmatemove");
-            b=new Board(8);
-
-            string FEN= "1nr5/1B2nb2/k3p1p1/p7/p2p2P1/1Q6/1K6/3R4 b - - 1 48";
-            b.updateBoard(FEN);
-            List<string> moves= new List<string>(b.selectPiece(Mode.select));
-            Console.WriteLine(b);
-            G.printlines(moves);
-            string selectedMove;
-            if(moves.Count>1)
-            {
-                selectedMove=moves[RNG.GenerateRandomNumber(0,moves.Count()-1)];                
-            }
-            else if(moves.Count==1)
-            {
-                selectedMove=moves[0];
-            }
-            else
-            {
-                selectedMove="fail";
-            }
-            Console.WriteLine("Selected: "+selectedMove);
-        }
-
-        static void SomeError2()
-        {
-            Console.WriteLine("Weird error");
-            b=new Board(8);
-
-            string FEN= "rnbqkbnr/1pp1pppp/3p4/pB6/8/2P1P3/PP1P1PPP/RNBQK1NR b KQkq - 1 3";
-            b.updateBoard(FEN);
-            List<string> moves= new List<string>(b.selectPiece(Mode.select));
-            Console.WriteLine(b);
-            G.printlines(moves);
-            string selectedMove;
-            if(moves.Count>1)
-            {
-                selectedMove=moves[RNG.GenerateRandomNumber(0,moves.Count()-1)];                
-            }
-            else if(moves.Count==1)
-            {
-                selectedMove=moves[0];
-            }
-            else
-            {
-                selectedMove="fail";
-            }
-            Console.WriteLine("Selected: "+selectedMove);
-        }
-
-        static void DoNotBecauseCheckMate()
-        {
-            Console.WriteLine("Castling Failure Test");
-            b=new Board(8);
-
-            string FEN= "2b5/1pN1k2p/r1pr1ppP/p2pPP2/P3p3/2B1P3/2n4Q/R1K2BqR w - - 1 24";
-            b.updateBoard(FEN);
-            List<string> moves= new List<string>(b.selectPiece(7,5)); //results in 0 moves
-            Console.WriteLine(b);
-            G.printlines(moves);
-            string selectedMove;
-            if(moves.Count!=1)
-            {
-                selectedMove=moves[RNG.GenerateRandomNumber(0,moves.Count()-1)];                
-            }
-            else
-            {
-                selectedMove=moves[0];
-            }
-            Console.WriteLine("Selected: "+selectedMove);
-        }
-        static void SomeError()
-        {
-            Console.WriteLine("Weird error");
-            b=new Board(8);
-
-            string FEN= "4r2B/1k4PN/pp6/P2p4/1p2pP1R/2b3P1/7R/7K w - - 4 62";
-            b.updateBoard(FEN);
-            List<string> moves= new List<string>(b.selectPiece(Mode.select));
-            Console.WriteLine(b);
-            G.printlines(moves);
-            string selectedMove;
-            if(moves.Count!=1)
-            {
-                selectedMove=moves[RNG.GenerateRandomNumber(0,moves.Count()-1)];                
-            }
-            else
-            {
-                selectedMove=moves[0];
-            }
-            Console.WriteLine("Selected: "+selectedMove);
-        }
-        static void CastlingTest1()
-        {
-            Console.WriteLine("Castling Failure Test");
-            b=new Board(8);
-
-            string FEN= "r2qkbr1/p3p2p/1p5n/2pp1pp1/8/B1P3PN/P1bNPP1P/R3KB1R w Kq f6 0 14";
-            b.updateBoard(FEN);
-            List<string> moves= new List<string>(b.selectPiece(7,4));
-            Console.WriteLine(b);
-            G.printlines(moves);
-            string selectedMove;
-            if(moves.Count!=1)
-            {
-                selectedMove=moves[RNG.GenerateRandomNumber(0,moves.Count()-1)];                
-            }
-            else
-            {
-                selectedMove=moves[0];
-            }
-            Console.WriteLine("Selected: "+selectedMove);
-        }
-
-        static void test()
-        {
-            Console.WriteLine("Chess Test");
-            b=new Board(8);
-            //Console.WriteLine(b);
-            //string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1";
-            //string FEN="rnbqk2r/ppp1ppbp/3p1np1/8/2PPPP2/2N5/PP4PP/R1BQKBNR b KQkq f3 1 5";
-            //string FEN="5n2/8/8/8/8/8/8/5N2 w - - 0 1";
-
-            //Cell currentCell = setCurrentCell();
-            //currentCell.CurrentlyOccupied=true;
-
-            //rook
-            //b.grid[currentCell.RowNumber-2,currentCell.ColoumnNumber].CurrentlyOccupied=true;
-            //b.grid[currentCell.RowNumber+2,currentCell.ColoumnNumber].CurrentlyOccupied=true;
-            //b.grid[currentCell.RowNumber,currentCell.ColoumnNumber-2].CurrentlyOccupied=true;
-            //b.grid[currentCell.RowNumber,currentCell.ColoumnNumber+2].CurrentlyOccupied=true;
-            
-            //b.grid[currentCell.RowNumber-1,currentCell.ColoumnNumber-1].CurrentlyOccupied=true;
-            //
-            //Console.WriteLine(b);
-            //b.MarkNextLegalMoves(currentCell,"Bishop");
-            //Console.WriteLine(b);
-
-            //TEST PIECE standard Board
-            //string FEN="rn1q1rk1/pb4p1/1p2p3/2pp1pPp/P1P1nP2/3P4/1B1NBP1P/R2Q1RK1 b - h6 0 16";
-            //string FEN="rnbqk2r/ppp3p1/3b1n2/5p1p/3Pp2P/2N2P2/PPP1N1B1/R1BQK2R b KQkq - 0 10"; //castle king black
-            //string FEN="3rqb2/p1pb2pr/Bp3p1p/1PQ1p2k/2P3nP/P3PP2/1B1P2P1/1R3KNR b - - 10 20"; //king is h5,check is checkmate
-            //List<string> moves= new List<string>(b.selectPiece(3,7));//SELECT KING BLACK
-
-            //string FEN="rn3b1r/pp2pk1p/B1pp1p2/4P1p1/8/NP3q1N/P1PP1PPP/1RBbK2R w K g6 0 13";//check h2pawnmoves
-            //List<string> moves= new List<string>(b.selectPiece(6,7));//selectPawn
-
-            string FEN= "r3kb1r/pp2pppp/1q1p2B1/2p3Pn/P2P4/4Pn1b/1PP1NP2/R1BQK1NR w KQ - 3 15";
-            b.updateBoard(FEN);
-            List<string> moves= new List<string>(b.selectPiece(Mode.select));
-            Console.WriteLine(b);
-            //List<string> moves= new List<string>(b.selectPiece(Mode.random));
-            //List<string> moves= new List<string>(b.selectPiece(Mode.select));
-            G.printlines(moves);
-            string selectedMove;
-            if(moves.Count!=1)
-            {
-                selectedMove=moves[RNG.GenerateRandomNumber(0,moves.Count()-1)];                
-            }
-            else
-            {
-                selectedMove=moves[0];
-            }
-            Console.WriteLine("Selected: "+selectedMove);
-
-            //string FEN="3rqb2/p1pb2pr/Bp3p1p/1PQ1p2k/2P3nP/P3PP2/1B1P2P1/1R3KNR b - - 10 20"; //king is h5,check is checkmate
-            
-            //List<string> moves= new List<string>(b.selectPiece(0,4));//king move
-
-            //Rook
-            //List<string> moves= new List<string>(b.selectPiece(0,5));
-            //Queen
-            //List<string> moves= new List<string>(b.selectPiece(0,3));
-            //Knight
-            //List<string> moves= new List<string>(b.selectPiece(4,4));
-            //List<string> moves= new List<string>(b.selectPiece(6,3)); //white
-            //Console.WriteLine("MOVES:");
-            //foreach(string s in moves)
-            //{
-            //    Console.WriteLine(s);
-            //}
-            //Console.WriteLine("-----------\n");
-            //Console.WriteLine(b);
         }
     }
 }

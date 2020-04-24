@@ -21,6 +21,14 @@ namespace Joueur.cs.Games.Chess.Logic {
         QUEEN = 18,
         KING = 7,
     }
+        public enum MoveType : int {
+        CAPTURE = 1,
+        THREAT = 2,
+        FORWARDMOVE = 3,
+        BACKWARDMOVE = 4,
+        PROMOTION = 5,
+        NOTHING = 6
+    }
 
     //-------------------------------RNG--------------------
     public class RNG {

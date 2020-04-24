@@ -11,9 +11,6 @@ namespace Joueur.cs.Games.Chess.Logic
 
     class Board
     {
-        //size of board 8x8
-        //private bool generatedOpponentMove {get;set;}
-        //private bool kingisCurrentlyInCheckMate {get;set;}
         public Cell KingCell {get;set;}
         public Cell opponentKingCell {get;set;}
         public List<Cell> KingCheckmatePieces {get;set;}
@@ -31,10 +28,25 @@ namespace Joueur.cs.Games.Chess.Logic
         //2d array
         public Cell[,] grid {get;set;} //row,col
         
+        //scores-------
         public int BlackScore;
         public int WhiteScore;
+        //----------------------
         public List<string> moveHistory;
         public string fenstring;
+
+         
+         //these are used for sliding_addmoves for the forloop check
+        public static Func<int, int, bool> forcheckCritera_negative= (A1,A2)=> A1>=A2; 
+        public static Func<int, int, bool> forcheckCritera_positive= (A1,A2)=> A1<A2;
+
+        public MoveType lastMovedone;
+        
+        /*  Brief: Contrustructor
+        *   @param[in] s board size to be constructed (yeah only do 8)
+        *   @pre s should be 
+        *   @post 
+        */
         public Board (int s)
         {
             deadWhitePieces = new Dictionary<char, int>();
@@ -60,6 +72,11 @@ namespace Joueur.cs.Games.Chess.Logic
             }
         }
         
+        /*  Brief: 
+        *   @param[in] 
+        *   @pre 
+        *   @post 
+        */
         public Board(Board b) //update listings
         {
             
@@ -101,13 +118,15 @@ namespace Joueur.cs.Games.Chess.Logic
 
         //ASSUMES MOVE IS VALID
         public void MakeMove(string move_action)
-        {            
+        {
+            //setup initialization of this before moving
             halfmove++;
-
+            lastMovedone=MoveType.NOTHING;
             moveHistory.Add(move_action);
             char[] chars = move_action.ToCharArray ();
             string s_part1=(chars[0].ToString()+chars[1].ToString());
             string s_part2=(chars[2].ToString()+chars[3].ToString());
+
             //RETURNS col,row [0],[1]
             //currentlocation
             List<int> initial=Cell.convertLocation(s_part1);
@@ -119,6 +138,7 @@ namespace Joueur.cs.Games.Chess.Logic
             Cell f_cell= grid[final[1],final[0]];
             
             bool movedKing=false;
+            //----------------------------
 
             //CHECK IF non enpassant, then erase to "-"
             enpassant="-";
@@ -131,11 +151,8 @@ namespace Joueur.cs.Games.Chess.Logic
                 {
                     //MOVE THE ROOKS
                     //KingSide
-                    //BUG: Castles even though there's nothing there
                     if(c_cell.location=="e8" && f_cell.location=="g8" && castling[2]==true)
                     {
-                        //Console.WriteLine(this);
-                        //Console.WriteLine(DebugBoard());
 
                         BlackPieces.Remove(grid[0,7]);
 
@@ -162,7 +179,8 @@ namespace Joueur.cs.Games.Chess.Logic
                 {
                     if(enpassant==(s_part2)) //pawnmove
                     {
-                        WhiteScore= WhiteScore - (int)PIECEVALUE.PAWN;
+                        UpdateScore(TURN.WHITE,(-(int)PIECEVALUE.PAWN),MoveType.CAPTURE);
+                        //WhiteScore= WhiteScore - (int)PIECEVALUE.PAWN;
                     }
                     else if(initial[1] == 0 && final[1] == 3) //initial row
                     {
@@ -184,10 +202,11 @@ namespace Joueur.cs.Games.Chess.Logic
 
                 //******************************************
                 //--UpdatePieces
-                //update deadpieces
+                //update deadpieces/ //CAPTURE NORMALLY
                 if(!(f_cell.isEmpty())) //not empty
                 {
-                    WhiteScore-=f_cell.piece.value; 
+                    UpdateScore(TURN.WHITE,(-f_cell.piece.value),MoveType.CAPTURE);
+                    //WhiteScore-=f_cell.piece.value; 
                     WhitePieces.Remove(f_cell);              
                     deadWhitePieces[f_cell.piece.name] = deadWhitePieces[f_cell.piece.name]+1;
                     halfmove=0;
@@ -226,7 +245,8 @@ namespace Joueur.cs.Games.Chess.Logic
                 {                    
                     if(enpassant==(s_part2)) //pawnmove
                     {
-                        BlackScore= BlackScore - (int)PIECEVALUE.PAWN;
+                        UpdateScore(TURN.BLACK,(-(int)PIECEVALUE.PAWN),MoveType.CAPTURE);
+                        //BlackScore= BlackScore - (int)PIECEVALUE.PAWN;
                     }
                     else if(initial[1] == 6 && final[1] == 4) //initial row //moved twice
                     {
@@ -247,13 +267,9 @@ namespace Joueur.cs.Games.Chess.Logic
                 }
                 //******************************************
                 if(!(f_cell.isEmpty())) //not empty
-                {
-                    if(move_action=="a1e1")
-                    {
-                        Console.WriteLine(DebugBoard());
-                        Console.WriteLine(this);
-                    }
-                    BlackScore-=f_cell.piece.value; 
+                {                    
+                    UpdateScore(TURN.BLACK,(-f_cell.piece.value),MoveType.CAPTURE);
+                    //BlackScore-=f_cell.piece.value; 
                     BlackPieces.Remove(f_cell);
                     deadBlackPieces[f_cell.piece.name] = deadBlackPieces[f_cell.piece.name]+1;
                     halfmove=0;
@@ -268,29 +284,37 @@ namespace Joueur.cs.Games.Chess.Logic
             {
                 WhitePieces.Remove(grid[initial[1],initial[0]]);
             }
-            //replace cell
-            bool promoted=false;
+            //replace cell-------------------------------------------
+            //bool promoted=false;
             if(chars.Count()==5) //promote to pawn to given
             {
                 Cell new_cell= new Cell(c_cell,final[0],final[1]);
                 grid[final[1],final[0]]=new_cell;
+
                 if(nextToMove==(int)TURN.BLACK) //back
                 {
                     char lower= char.ToLower(chars[4]);
                     grid[final[1],final[0]].placePiece(lower);
                     BlackPieces.Add(grid[final[1],final[0]]);
-                    BlackScore+=grid[final[1],final[0]].piece.value; //add value
+                    
+                    UpdateScore(TURN.BLACK,(grid[final[1],final[0]].piece.value),MoveType.PROMOTION);
+
+                    //BlackScore+=grid[final[1],final[0]].piece.value; //add value
+
                     deadBlackPieces[lower] = deadBlackPieces[lower]-1;
-                    promoted=true;
+                    //promoted=true;
                 }
                 else
                 {
                     char upper= char.ToUpper(chars[4]);
                     grid[final[1],final[0]].placePiece(upper);
                     WhitePieces.Add(grid[final[1],final[0]]);
-                    WhiteScore+=grid[final[1],final[0]].piece.value; //add value
+
+                    UpdateScore(TURN.WHITE,(grid[final[1],final[0]].piece.value),MoveType.PROMOTION);
+                    //WhiteScore+=grid[final[1],final[0]].piece.value; //add value
+
                     deadWhitePieces[upper] = deadWhitePieces[upper]-1;
-                    promoted=true;
+                    //promoted=true;
                 }                                
             }
             else
@@ -326,9 +350,24 @@ namespace Joueur.cs.Games.Chess.Logic
             {
                 fullmove++;
             }
+        }
 
-            //CreateFEN();
-            
+        public void UpdateScore(TURN player, int scoretoAdd,MoveType m)
+        {
+            if(m == MoveType.CAPTURE || m == MoveType.PROMOTION)
+            {
+                if(player == TURN.WHITE)
+                {
+                    WhiteScore+=scoretoAdd;
+
+                }
+                else if (player == TURN.BLACK)
+                {
+                    BlackScore+=scoretoAdd;
+                }
+            }
+            lastMovedone=m;
+
         }
 
         public void CreateFEN()
@@ -402,14 +441,15 @@ namespace Joueur.cs.Games.Chess.Logic
         {
             int score=0;
             int tempscore=0;
-            if(player==(int)TURN.BLACK)
+            
+            if(player==(int)TURN.BLACK) //Black>0 is good
             {
                 score+=BlackScore-WhiteScore;
                 tempscore=score;
                 if(nextToMove==(int)TURN.BLACK)
                 {
                     //is black Checkmated?
-                    score-= (isCheckmate(KingCell))? (int)PIECEVALUE.KING : 0;
+                    score-= (isCheckmate(KingCell))? (int)PIECEVALUE.KING : 0;             
                 }
                 else
                 {
@@ -417,7 +457,7 @@ namespace Joueur.cs.Games.Chess.Logic
                     score+= (isCheckmate(KingCell))? (int)PIECEVALUE.KING : 0;
                 }
             }
-            else
+            else//White>0 is good
             {
                 score+=WhiteScore-BlackScore;
                 
@@ -434,6 +474,11 @@ namespace Joueur.cs.Games.Chess.Logic
             }
             return score;
         }
+        
+        /*  Brief: Reset deadPieces
+        *   @pre board must be constructed and updated by fenstring
+        *   @post resets dead pieces back to all dead.
+        */
         public void resetDeadPieces()
         {
             deadBlackPieces.Clear();     
@@ -458,10 +503,16 @@ namespace Joueur.cs.Games.Chess.Logic
             };
         }
 
-        public List<string> selectPiece(Mode m)
+
+        /*  Brief: Returns moves that can be done from board 
+        *   @param[in] m mode to use (random selects a random piece) (select selects all pieces)
+        *   @pre board must be fully updated
+        *   @post returns moves that can be done from the board for the current player to move (nextToMove)
+        */
+        public List<string> move_select(Mode m)
         {
             List<string> movesAllowed = new List<string>();
-            if(nextToMove==(int)TURN.BLACK) //black
+            if(nextToMove==(int)TURN.BLACK) //black's turn
             {
                 if(m.Equals(Mode.random))
                 {
@@ -474,15 +525,14 @@ namespace Joueur.cs.Games.Chess.Logic
                     KingCheckmatePieces.Clear();
                     if(!isCheckmate(KingCell))
                     {
-                        //kingisCurrentlyInCheckMate=false;
+                        //return moves from all possible pieces to move
                         foreach(var p in BlackPieces)
                         {
                             movesAllowed.AddRange(returnMovesFromCell(p));
                         }
                     }
-                    else
+                    else //king has to be safe,make a move to make the king safe
                     {
-                        //kingisCurrentlyInCheckMate=true;
                         movesAllowed.AddRange(returnMovesFromCell(KingCell)); //moves from king
 
                         List<string> cellstomoveOn = new List<string>();
@@ -511,7 +561,8 @@ namespace Joueur.cs.Games.Chess.Logic
                             cellstomoveOn.AddRange(findpathtoKingBishop(KingCheckmatePieces[0]));
                             cellstomoveOn.AddRange(findpathtoKingRook(KingCheckmatePieces[0]));
                         }
-
+                        //-----------------
+                        //eliminate moves that are not going to make king safe
                         foreach(string s in tempList)
                         {
                             foreach(string piecetoEliminate in cellstomoveOn)
@@ -539,15 +590,15 @@ namespace Joueur.cs.Games.Chess.Logic
                     KingCheckmatePieces.Clear();
                     if(!isCheckmate(KingCell))
                     {
-                        //kingisCurrentlyInCheckMate=false;
+                        //return moves from all possible pieces to move
                         foreach(var p in WhitePieces)
                         {
+                            
                             movesAllowed.AddRange(returnMovesFromCell(p));
                         }
                     }
-                    else
+                    else //king has to be safe,make a move to make the king safe
                     {
-                        //kingisCurrentlyInCheckMate=true;
                         movesAllowed.AddRange(returnMovesFromCell(KingCell)); //moves from king
 
                         List<string> cellstomoveOn = new List<string>();
@@ -562,7 +613,6 @@ namespace Joueur.cs.Games.Chess.Logic
                         }
 
                         //cells in the way of king //these are bishop and rooks
-                        //add knight and pawn here
                         //-------------------------------
                         if(KingCheckmatePieces[0].piece.name == 'b')
                         {
@@ -577,7 +627,8 @@ namespace Joueur.cs.Games.Chess.Logic
                             cellstomoveOn.AddRange(findpathtoKingBishop(KingCheckmatePieces[0]));
                             cellstomoveOn.AddRange(findpathtoKingRook(KingCheckmatePieces[0]));
                         }
-
+                        //--------------
+                        //eliminate moves that are not going to make king safe
                         foreach(string s in tempList)
                         {
                             foreach(string piecetoEliminate in cellstomoveOn)
@@ -594,13 +645,12 @@ namespace Joueur.cs.Games.Chess.Logic
             }
             return movesAllowed;
         }
-        public List<string> selectPiece(int y,int x)
-        {
-            List<string> movesAllowed = new List<string>();
-            movesAllowed.AddRange(returnMovesFromCell(grid[y,x]));
-            return movesAllowed;
-        }
         
+        /*  Brief: Moves that can be done from cell selected
+        *   @param[in] c_cell sell to select
+        *   @pre (board should be updated or returns nothing)
+        *   @post returns moves that can be done from cell. If piece exists returns piece moves.
+        */
         public List<string> returnMovesFromCell ( Cell c_cell)
         {
             List<string> toReturn= new List<string>();
@@ -645,11 +695,14 @@ namespace Joueur.cs.Games.Chess.Logic
         }
 
         //CHECKS CELL IF CHECKMATABLE FROM c_cell //FOR KING USAGE ONLY
+        /*  Brief: 
+        *   @param[in] c_cell checks if this cell can be checkmated(pretends its king)
+        *   @pre board is 
+        *   @post returns if c_cell can be attacked
+        */
         bool isCheckmate(Cell c_cell)
         {
             Cell s_cell= new Cell();
-            
-
 
             #region checkPawn
             //checkPawns-----------------
@@ -713,6 +766,35 @@ namespace Joueur.cs.Games.Chess.Logic
             #endregion checkKnight
             #region checkBishop
             
+            int kingpath=4;
+            List<string> dummylist= new List<string>();
+            
+            Sliding_AddMoves(c_cell,ref dummylist,1,int.MaxValue,
+            forcheckCritera_positive,true,2,ref kingpath);
+            if(kingpath==5)
+            {
+                return true;
+            }
+            Sliding_AddMoves(c_cell,ref dummylist,1,int.MaxValue,
+            forcheckCritera_positive,true,3,ref kingpath);
+            if(kingpath==5)
+            {
+                return true;
+            }        
+            Sliding_AddMoves(c_cell,ref dummylist,1,int.MaxValue,
+            forcheckCritera_positive,true,4,ref kingpath);
+            if(kingpath==5)
+            {
+                return true;
+            }        
+            Sliding_AddMoves(c_cell,ref dummylist,1,int.MaxValue,
+            forcheckCritera_positive,true,5,ref kingpath);
+            if(kingpath==5)
+            {
+                return true;
+            }        
+            /*
+            
             int i=1;
             while(isSafe(c_cell.r_N-i,c_cell.c_N-i))
             {
@@ -770,7 +852,7 @@ namespace Joueur.cs.Games.Chess.Logic
                 i++;                  
             };
 
-            
+            //this one
             i=1;
             while(isSafe(c_cell.r_N+i,c_cell.c_N-i))
             {
@@ -827,10 +909,39 @@ namespace Joueur.cs.Games.Chess.Logic
                     }
                 }        
                 i++;                  
-            };
-            #endregion          
+            };*/
+            #endregion
             #region checkRook
-            //up
+            
+            kingpath=3;
+            Sliding_AddMoves(c_cell,ref dummylist,c_cell.r_N-1,0,
+            forcheckCritera_negative,false,0,ref kingpath);
+            if(kingpath==5)
+            {
+                return true;
+            }
+            //left
+            Sliding_AddMoves(c_cell,ref dummylist,c_cell.c_N-1,0,
+            forcheckCritera_negative,false,1,ref kingpath);
+            if(kingpath==5)
+            {
+                return true;
+            }
+            //down
+            Sliding_AddMoves(c_cell,ref dummylist,c_cell.r_N+1,Size,
+            forcheckCritera_positive,true,0,ref kingpath);
+            if(kingpath==5)
+            {
+                return true;
+            }
+            //right
+            Sliding_AddMoves(c_cell,ref dummylist,c_cell.c_N+1,Size,
+            forcheckCritera_positive,true,1,ref kingpath);
+            if(kingpath==5)
+            {
+                return true;
+            }
+            /*
             for(int i2 =c_cell.r_N-1;i2>=0;i2--)
             {
 
@@ -950,7 +1061,7 @@ namespace Joueur.cs.Games.Chess.Logic
                         }
                     }
                 }    
-            }
+            }*/
             #endregion
             #region checkKing
             
@@ -1177,7 +1288,7 @@ namespace Joueur.cs.Games.Chess.Logic
                 {
                     //f8,g8
                     //check if there are pieces blocking
-                    if(!(grid[0,5].CurrentlyOccupied) && !(grid[0,6].CurrentlyOccupied))
+                    if(!(grid[0,5].CurrentlyOccupied) && !(grid[0,6].CurrentlyOccupied) && !isCheckmate(KingCell))
                     {
                         //temp move king and rook to check if checkmate when moved
 
@@ -1208,7 +1319,7 @@ namespace Joueur.cs.Games.Chess.Logic
                     //b8,c8,d8
                     //check if there are pieces blocking
                     if(!(grid[0,1].CurrentlyOccupied) && !(grid[0,2].CurrentlyOccupied) &&
-                    !(grid[0,3].CurrentlyOccupied))
+                    !(grid[0,3].CurrentlyOccupied) && !isCheckmate(KingCell))
                     {
                         grid[0,0] = Cell.emptyCell(0,0);
 
@@ -1240,7 +1351,7 @@ namespace Joueur.cs.Games.Chess.Logic
                 {
                     //f1,g1
                     //check if there are pieces blocking
-                    if(!(grid[7,5].CurrentlyOccupied) && !(grid[7,6].CurrentlyOccupied))
+                    if(!(grid[7,5].CurrentlyOccupied) && !(grid[7,6].CurrentlyOccupied) && !isCheckmate(KingCell))
                     {
                         grid[7,4] = Cell.emptyCell(4,7);
                         grid[7,5] = Cell.emptyCell(5,7);
@@ -1268,7 +1379,7 @@ namespace Joueur.cs.Games.Chess.Logic
                     //b1,c1,d1
                     //check if there are pieces blocking
                     if(!(grid[7,1].CurrentlyOccupied) && !(grid[7,2].CurrentlyOccupied) &&
-                    !(grid[7,3].CurrentlyOccupied) )
+                    !(grid[7,3].CurrentlyOccupied) && !isCheckmate(KingCell))
                     {
                         grid[7,0] = Cell.emptyCell(0,7);
 
@@ -1295,16 +1406,195 @@ namespace Joueur.cs.Games.Chess.Logic
             
             return toAdd;                  
         }
+        
+        /*
+        *   @pre i_stopcriteria must have
+        *   mode 0-1
+        *   kingpath 0 not finding path to king, 1-2 find path to king, if ==2 king has been found
+        *   3-5 iskingcheckmate(3 is rookmoves 4 is bishopmoves), if ==5 king has been checkmated
+        */
+        private void Sliding_AddMoves( Cell c_cell,ref List<string> toAdd,
+        int i_start,int i_end,Func<int, int, bool> i_stopcriteria,bool toIncrease,int mode,ref int kingPath)
+        {
+            Func<int> left; //row variable
+            Func<int> right; //right varialble
+            Cell s_cell= new Cell();
+            int increaseby=(toIncrease)? 1 : -1;
+            int i=0;
+            
+            //if(isSafe(i,c_cell.c_N)) //UP
+            //if(isSafe(c_cell.r_N,i)) //LEFT
+            //(isSafe(i,c_cell.c_N))   //DOWN
+            //if(isSafe(c_cell.r_N,i)) //RIGHT
+            
+            //isSafe(c_cell.r_N-i,c_cell.c_N-i)
+            //isSafe(c_cell.r_N+i,c_cell.c_N+i)
+            //isSafe(c_cell.r_N+i,c_cell.c_N-i)
+            //isSafe(c_cell.r_N-i,c_cell.c_N+i)
+            
+            if(mode==0) //Check
+            {
+                left= ()=>i;
+                right=()=>c_cell.c_N;
+            }
+            else if(mode==1)
+            {
+                left= ()=>c_cell.r_N;
+                right=()=>i;
+            }
+            else if(mode==2) //Check
+            {
+                left= ()=>c_cell.r_N-i;
+                right=()=>c_cell.c_N-i;
+            }
+            else if(mode==3)
+            {
+                left= ()=>c_cell.r_N+i;
+                right=()=>c_cell.c_N+i;
+            }
+            else if(mode==4)
+            {
+                left= ()=>c_cell.r_N+i;
+                right=()=>c_cell.c_N-i;
+            }
+            else if(mode==5)
+            {
+                left= ()=>c_cell.r_N-i;
+                right=()=>c_cell.c_N+i;
+            }
+            else
+            {
+                throw new System.ArgumentException("Parameter is invalid ", "mode: "+mode);
+            }
+
+            for(i = i_start;i_stopcriteria(i,i_end);i+=increaseby)
+            {
+                if(isSafe(left(),right()))
+                {
+                    s_cell= new Cell (grid[left(),right()]);
+                    if(kingPath==0)
+                    {
+                        
+                        if(sameSide(left(),right()))
+                        {
+                            break;
+                        }
+                        if(!checkmateifPieceMoved(c_cell,s_cell))
+                        {
+                            toAdd.Add(s_cell.location);
+                        }
+                    
+                        if(grid[left(),right()].CurrentlyOccupied) //no more moves to place
+                        {
+                            break;
+                        }
+                    }
+                    else if(kingPath==1)
+                    {
+                        if(s_cell.location == KingCell.location)
+                        {
+                            kingPath=2; //stop, king has been found
+                            break;
+                        }
+                        else if(s_cell.isEmpty())
+                        {
+                            toAdd.Add(s_cell.location);
+                        }
+                    
+                        if(grid[left(),right()].CurrentlyOccupied) //no more moves to place
+                        {
+                            break;
+                        }
+                    }
+                    else if(kingPath>=3)
+                    {
+                        if(sameSide(left(),right()) && s_cell.location!=KingCell.location)
+                        {
+                            break;
+                        }
+                        if(s_cell.location=="b2" ||c_cell.location=="f6")
+                        {
+
+                        }
+                        if(s_cell.CurrentlyOccupied && s_cell.location!=KingCell.location) //no more moves to place
+                        {
+                            char name= Char.ToLower(s_cell.piece.name);
+                            if( (kingPath==3 && name=='r') || (kingPath==4 && name=='b') || name=='q')
+                            {
+                                if(c_cell.location == KingCell.location)//do not return, find pieces
+                                {
+                                    KingCheckmatePieces.Add(s_cell);
+                                }
+                                kingPath=5;
+                                break;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        throw new System.ArgumentException("Parameter is invalid ", "kingpath: "+kingPath);
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+            /*
+            if(isSafe(i2,c_cell.c_N))
+                {
+                    s_cell= new Cell (grid[i2,c_cell.c_N]);
+                    if(sameSide(i2,c_cell.c_N) && s_cell.location!=KingCell.location)
+                    {
+                        break;
+                    }                    
+                    if(s_cell.CurrentlyOccupied && s_cell.location!=KingCell.location) //no more moves to place
+                    {
+                        char name= Char.ToLower(s_cell.piece.name);
+                        if(name=='r' || name=='q')
+                        {
+                            if(c_cell == KingCell)//do not return, find pieces
+                            {
+                                KingCheckmatePieces.Add(s_cell);
+                            }
+                            return true;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+            */
+        }
                 
         private List<string> RookMoves(ref Cell c_cell)
         {
             Cell s_cell= new Cell();
             List<string> toAdd = new List<string>();
-            
-            int[] KM_R = { 0, 0,-1, 1, 1, 1,-1,-1};
-            int[] KM_C = { 1,-1, 0, 0, 1,-1, 1,-1};
-
+            int dummy=0;
             //up
+            Sliding_AddMoves(c_cell,ref toAdd,c_cell.r_N-1,0,
+            forcheckCritera_negative,false,0,ref dummy);
+            //left
+            Sliding_AddMoves(c_cell,ref toAdd,c_cell.c_N-1,0,
+            forcheckCritera_negative,false,1,ref dummy);
+            //down
+            Sliding_AddMoves(c_cell,ref toAdd,c_cell.r_N+1,Size,
+            forcheckCritera_positive,true,0,ref dummy);
+            //right
+            Sliding_AddMoves(c_cell,ref toAdd,c_cell.c_N+1,Size,
+            forcheckCritera_positive,true,1,ref dummy);
+            //up
+            /*
+            toAdd = new List<string>();
+            
+            
             for(int i =c_cell.r_N-1;i>=0;i--)
             {
 
@@ -1325,7 +1615,29 @@ namespace Joueur.cs.Games.Chess.Logic
                         break;
                     }
                 }
-            }         
+            }
+            
+            
+            //left
+            for(int i =c_cell.c_N-1;i>=0;i--)
+            {                
+                if(isSafe(c_cell.r_N,i))
+                {
+                    s_cell= new Cell (grid[c_cell.r_N,i]);
+                    if(sameSide(c_cell.r_N,i))
+                    {
+                        break;
+                    }
+
+                    if(!checkmateifPieceMoved(c_cell,s_cell))
+                    {
+                        toAdd.Add(s_cell.location);
+                    }
+                
+                    if(grid[c_cell.r_N,i].CurrentlyOccupied) //no more moves to place
+                        break;          
+                }
+            }      
             //down
             
             for(int i =c_cell.r_N+1;i<Size;i++)
@@ -1347,28 +1659,6 @@ namespace Joueur.cs.Games.Chess.Logic
 
                 }
             }         
-
-            
-            //left
-            for(int i =c_cell.c_N-1;i>=0;i--)
-            {                
-                if(isSafe(c_cell.r_N,i))
-                {
-                    s_cell= new Cell (grid[c_cell.r_N,i]);
-                    if(sameSide(c_cell.r_N,i))
-                    {
-                        break;
-                    }
-
-                    if(!checkmateifPieceMoved(c_cell,s_cell))
-                    {
-                        toAdd.Add(s_cell.location);
-                    }
-                
-                    if(grid[c_cell.r_N,i].CurrentlyOccupied) //no more moves to place
-                        break;          
-                }
-            }         
             //right
             
             for(int i =c_cell.c_N+1;i<Size;i++)
@@ -1376,11 +1666,6 @@ namespace Joueur.cs.Games.Chess.Logic
                 if(isSafe(c_cell.r_N,i))
                 {
                     s_cell= new Cell (grid[c_cell.r_N,i]);
-                    //if(s_cell.location=="e1")
-                    //{
-                    //    Console.WriteLine(DebugBoard());
-                    //    Console.WriteLine(this);
-                    //}
                     if(sameSide(c_cell.r_N,i))
                     {
                         break;
@@ -1396,14 +1681,25 @@ namespace Joueur.cs.Games.Chess.Logic
 
                 }    
             }
+            */
             return toAdd;                        
         }
 
         private List<string> BishopMoves(ref Cell c_cell)
         {
             List<string> toAdd = new List<string>();
-            
+            int dummy=0;
+            Sliding_AddMoves(c_cell,ref toAdd,1,int.MaxValue,
+            forcheckCritera_positive,true,2,ref dummy);            
+            Sliding_AddMoves(c_cell,ref toAdd,1,int.MaxValue,
+            forcheckCritera_positive,true,3,ref dummy);
+            Sliding_AddMoves(c_cell,ref toAdd,1,int.MaxValue,
+            forcheckCritera_positive,true,4,ref dummy);
+            Sliding_AddMoves(c_cell,ref toAdd,1,int.MaxValue,
+            forcheckCritera_positive,true,5,ref dummy);
+            /*    
             Cell s_cell= new Cell();
+            
             int i=1;
             while(isSafe(c_cell.r_N-i,c_cell.c_N-i))
             {      
@@ -1424,7 +1720,6 @@ namespace Joueur.cs.Games.Chess.Logic
                 }        
                 i++;                  
             };
-            
             
             i=1;
             while(isSafe(c_cell.r_N+i,c_cell.c_N+i))
@@ -1489,7 +1784,13 @@ namespace Joueur.cs.Games.Chess.Logic
                     break;
                 }        
                 i++;                  
-            };
+            };*/
+            
+            
+            
+
+            
+            
             return toAdd;
 
         }
@@ -1497,8 +1798,43 @@ namespace Joueur.cs.Games.Chess.Logic
         private List<string> findpathtoKingRook(Cell c_cell)
         {
             List<string> toAdd = new List<string>();
+            int kingpath=1;
+            //up
+            Sliding_AddMoves(c_cell,ref toAdd,c_cell.r_N-1,0,
+            forcheckCritera_negative,false,0,ref kingpath);
+            if(kingpath==2)
+            {
+                return toAdd;
+            }
+            toAdd.Clear();
+            //left
+            Sliding_AddMoves(c_cell,ref toAdd,c_cell.c_N-1,0,
+            forcheckCritera_negative,false,1,ref kingpath);
+            if(kingpath==2)
+            {
+                return toAdd;
+            }
+            toAdd.Clear();
+            //down
+            Sliding_AddMoves(c_cell,ref toAdd,c_cell.r_N+1,Size,
+            forcheckCritera_positive,true,0,ref kingpath);
+            if(kingpath==2)
+            {
+                return toAdd;
+            }
+            toAdd.Clear();
+            //right
+            Sliding_AddMoves(c_cell,ref toAdd,c_cell.c_N+1,Size,
+            forcheckCritera_positive,true,1,ref kingpath);
+            if(kingpath==2)
+            {
+                return toAdd;
+            }
+            toAdd.Clear();
+
             //SAME SIDE IS REVERSE HERE
             //up 
+            /*
             for(int i =c_cell.r_N-1;i>=0;i--)
             {
                 if(isSafe(i,c_cell.c_N))
@@ -1588,15 +1924,45 @@ namespace Joueur.cs.Games.Chess.Logic
                         break;
                     }
                 }
-            }
+            }*/
             
-            toAdd = new List<string>();
             return toAdd;                        
         }
 
         private List<string> findpathtoKingBishop(Cell c_cell)
         {
             List<string> toAdd = new List<string>();
+            int kingpath=1;
+            
+            Sliding_AddMoves(c_cell,ref toAdd,1,int.MaxValue,
+            forcheckCritera_positive,true,2,ref kingpath);
+            if(kingpath==2)
+            {
+                return toAdd;
+            }
+            toAdd.Clear();
+            Sliding_AddMoves(c_cell,ref toAdd,1,int.MaxValue,
+            forcheckCritera_positive,true,3,ref kingpath);
+            if(kingpath==2)
+            {
+                return toAdd;
+            }        
+            toAdd.Clear();
+            Sliding_AddMoves(c_cell,ref toAdd,1,int.MaxValue,
+            forcheckCritera_positive,true,4,ref kingpath);
+            if(kingpath==2)
+            {
+                return toAdd;
+            }        
+            toAdd.Clear();
+            Sliding_AddMoves(c_cell,ref toAdd,1,int.MaxValue,
+            forcheckCritera_positive,true,5,ref kingpath);
+            if(kingpath==2)
+            {
+                return toAdd;
+            }        
+            toAdd.Clear();
+            /*
             int i=1;
             while(isSafe(c_cell.r_N-i,c_cell.c_N-i))
             {
@@ -1682,7 +2048,7 @@ namespace Joueur.cs.Games.Chess.Logic
                     break;
                 }
                 i++;                  
-            };
+            };*/
             return toAdd;
 
         }

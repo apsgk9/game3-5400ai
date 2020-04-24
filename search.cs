@@ -55,6 +55,9 @@ namespace Joueur.cs.Games.Chess.Logic {
             return (lhs.value > rhs.value) ? true : false;
         }
 
+        /*  Brief: Finds Minimum Value of its Children (max functions)
+        /   self-explan
+        */
         public override string ToString () {
             return move+","+value.ToString();
         }
@@ -70,7 +73,7 @@ namespace Joueur.cs.Games.Chess.Logic {
         public static Func<int, int, bool> greaterThanInt= (A1,A2)=> A1>A2; //formmin
         public static string AlphaBetaSearch (ref Board b, int depth) {
             //generate all valid moves
-            List<string> moves= new List<string>(b.selectPiece(Mode.select));
+            List<string> moves= new List<string>(b.move_select(Mode.select));
             //G.printlines(moves);
 
             List<Action> Action_list= new List<Action>();
@@ -136,7 +139,7 @@ namespace Joueur.cs.Games.Chess.Logic {
         */
         public static int maxValue (Board b, int depth,int player,int given_alpha,int given_beta){//, ref int given_value) {
             //generate all valid moves
-            List<string> moves= new List<string>(b.selectPiece(Mode.select));
+            List<string> moves= new List<string>(b.move_select(Mode.select));
             List<int> Value_list= new List<int>();
             
             if(moves.Count() == 0 || depth==0)//terminal//dead end
@@ -202,7 +205,7 @@ namespace Joueur.cs.Games.Chess.Logic {
             //Console.WriteLine("MIN:"+depth);
 
             //generate all valid moves
-            List<string> moves= new List<string>(b.selectPiece(Mode.select));
+            List<string> moves= new List<string>(b.move_select(Mode.select));
             List<int> Value_list= new List<int>();
 
             if(moves.Count() == 0 || depth==0)//terminal//dead end
