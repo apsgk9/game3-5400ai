@@ -115,7 +115,14 @@ namespace Joueur.cs.Games.Chess.Logic
         }
 
 
-
+        /*  Brief: Make Move Function
+        *   @param[in] move_action move in the form of initialcell and final cell
+        *   (ex) "e5c5","b2d4","g7g8P" etc...
+        *   @pre board has a playable state (updateBoard(string) is called at least once)
+        *   @pre Assumes move_action is a valid move
+        *   @post changes the board based on move_action
+        *   @post updates score if applicable
+        */
         //ASSUMES MOVE IS VALID
         public void MakeMove(string move_action)
         {
@@ -351,10 +358,17 @@ namespace Joueur.cs.Games.Chess.Logic
                 fullmove++;
             }
         }
-
-        public void UpdateScore(TURN player, int scoretoAdd,MoveType m)
+        /*  Brief: UpdatesScore
+        *   @param[in] player which to update score
+        *   @param[in] scoretoAdd how much to change score (can be -/+)
+        *   @param[in] moveDone move that made an update to score (for future use)
+        *   @pre player must be in range of TURN enum
+        *   @pre moveDone must be in range of MoveType enum
+        *   @post updates score based on parameters, sets lastmoveDone to move given
+        */
+        public void UpdateScore(TURN player, int scoretoAdd,MoveType moveDone)
         {
-            if(m == MoveType.CAPTURE || m == MoveType.PROMOTION)
+            if(moveDone == MoveType.CAPTURE || moveDone == MoveType.PROMOTION)
             {
                 if(player == TURN.WHITE)
                 {
@@ -366,10 +380,13 @@ namespace Joueur.cs.Games.Chess.Logic
                     BlackScore+=scoretoAdd;
                 }
             }
-            lastMovedone=m;
+            lastMovedone=moveDone;
 
         }
-
+        /*  Brief: CreateFen
+        *   @pre board must be in a playable state
+        *   @post Updates FENstring of this current board.
+        */
         public void CreateFEN()
         {
             fenstring="";
@@ -436,7 +453,12 @@ namespace Joueur.cs.Games.Chess.Logic
             fenstring+= fullmove;
 
         }
-
+        /*  Brief: CreateFen
+        *   @param[in] player calculates score in favor of this parameter
+        *   if black is called, a positive score means black is winning. (vice versa)
+        *   @pre player is -1 or 1
+        *   @post returns score based on the boardstate
+        */
         public int calculateScore(int player) //-1 or 1
         {
             int score=0;
@@ -694,8 +716,7 @@ namespace Joueur.cs.Games.Chess.Logic
             return toReturn;
         }
 
-        //CHECKS CELL IF CHECKMATABLE FROM c_cell //FOR KING USAGE ONLY
-        /*  Brief: 
+        /*  Brief: CHECKS CELL IF CHECKMATABLE FROM c_cell (PRIMARILY FOR KING USAGE)
         *   @param[in] c_cell checks if this cell can be checkmated(pretends its king)
         *   @pre board is 
         *   @post returns if c_cell can be attacked
@@ -765,7 +786,7 @@ namespace Joueur.cs.Games.Chess.Logic
             
             #endregion checkKnight
             #region checkBishop
-            
+            //checks if bishop can reach this cell
             int kingpath=4;
             List<string> dummylist= new List<string>();
             
@@ -912,6 +933,7 @@ namespace Joueur.cs.Games.Chess.Logic
             };*/
             #endregion
             #region checkRook
+            //checks if rook can reach this cell
             
             kingpath=3;
             Sliding_AddMoves(c_cell,ref dummylist,c_cell.r_N-1,0,
@@ -1064,6 +1086,7 @@ namespace Joueur.cs.Games.Chess.Logic
             }*/
             #endregion
             #region checkKing
+            //checks if a king can reach this square
             
             int[] KM_R = { 0, 0,-1, 1, 1, 1,-1,-1};
             int[] KM_C = { 1,-1, 0, 0, 1,-1, 1,-1};
@@ -1109,6 +1132,12 @@ namespace Joueur.cs.Games.Chess.Logic
             return KingisNowCheckmateifMoved;
 
         }
+        
+        /*  Brief: Promotes Piece given string location
+        *   @param[in] input_location location to attach dead pieces to revive/promote pawn to
+        *   @pre input_location should be at the end of the board
+        *   @post attaches possible promotion pieces and returns input_location+(dead pieces of nextToMove)
+        */
         public List<string> promotePiece(string input_location)
         {
             List<string> toAdd = new List<string>();
@@ -1123,6 +1152,11 @@ namespace Joueur.cs.Games.Chess.Logic
             }
             return toAdd.Distinct().ToList();
         }
+        /*  Brief: PawnMoves
+        *   @param[in] c_cell cell at which the pawn is located
+        *   @pre this should have been called from returnMovesFromCell(Cell) 
+        *   @post returns all possible cell location (List<string>) that the pawn can move to
+        */
         private List<string> PawnMoves(ref Cell c_cell)
         {
             List<string> toAdd = new List<string>();
@@ -1232,6 +1266,12 @@ namespace Joueur.cs.Games.Chess.Logic
             return toAdd;
 
         }
+        
+        /*  Brief: KnightMoves
+        *   @param[in] c_cell cell at which the Knight is located
+        *   @pre this should have been called from returnMovesFromCell(Cell) 
+        *   @post returns all possible cell location (List<string>) that the Knight can move to
+        */
         private List<string> KnightMoves(ref Cell c_cell)
         {
             
@@ -1408,10 +1448,21 @@ namespace Joueur.cs.Games.Chess.Logic
         }
         
         /*
-        *   @pre i_stopcriteria must have
-        *   mode 0-1
-        *   kingpath 0 not finding path to king, 1-2 find path to king, if ==2 king has been found
+        *   @brief centralized function for bishop/rook moves
+        *   @param[in] c_cell cell to produce moves from
+        *   @param[inout] toAdd list to add the moves to(not used in kingPath>=3)
+        *   @param[in] i_start used in forloop i=i_start
+        *   @param[in] toIncrease the way the for loop should increase (1/-1)(T/F)
+        *   @param[in] i_end used in forloop  tocheck when to end
+        *   @param[in] mode 0-5 checks which mode use for left() and right() 
+        *   @param[inout] kingpath 
+        *   kingpath: 0 not finding path to king, 1-2 find path to king, if ==2 king has been found
         *   3-5 iskingcheckmate(3 is rookmoves 4 is bishopmoves), if ==5 king has been checkmated
+        *   @pre i_stopcriteria must have coincide with i_start and i_end and vice versa
+        *   @pre appropriate values for i_start,i_end,toIncrease,mode,kingPath for the function to work
+        *   @post when kingpath<2, returns moves that can be produced from the cell
+        *   @post when kingpath==2, returns if king has been found
+        *   @post when kingpath>=3, returns if king is checkmated by changing kingpath to 5
         */
         private void Sliding_AddMoves( Cell c_cell,ref List<string> toAdd,
         int i_start,int i_end,Func<int, int, bool> i_stopcriteria,bool toIncrease,int mode,ref int kingPath)
@@ -1421,16 +1472,6 @@ namespace Joueur.cs.Games.Chess.Logic
             Cell s_cell= new Cell();
             int increaseby=(toIncrease)? 1 : -1;
             int i=0;
-            
-            //if(isSafe(i,c_cell.c_N)) //UP
-            //if(isSafe(c_cell.r_N,i)) //LEFT
-            //(isSafe(i,c_cell.c_N))   //DOWN
-            //if(isSafe(c_cell.r_N,i)) //RIGHT
-            
-            //isSafe(c_cell.r_N-i,c_cell.c_N-i)
-            //isSafe(c_cell.r_N+i,c_cell.c_N+i)
-            //isSafe(c_cell.r_N+i,c_cell.c_N-i)
-            //isSafe(c_cell.r_N-i,c_cell.c_N+i)
             
             if(mode==0) //Check
             {
@@ -1472,7 +1513,7 @@ namespace Joueur.cs.Games.Chess.Logic
                 if(isSafe(left(),right()))
                 {
                     s_cell= new Cell (grid[left(),right()]);
-                    if(kingPath==0)
+                    if(kingPath==0) //used to generate moves from rook/bishop/queen
                     {
                         
                         if(sameSide(left(),right()))
@@ -1489,7 +1530,7 @@ namespace Joueur.cs.Games.Chess.Logic
                             break;
                         }
                     }
-                    else if(kingPath==1)
+                    else if(kingPath==1) //used in finding pathtofindking
                     {
                         if(s_cell.location == KingCell.location)
                         {
@@ -1506,7 +1547,7 @@ namespace Joueur.cs.Games.Chess.Logic
                             break;
                         }
                     }
-                    else if(kingPath>=3)
+                    else if(kingPath>=3) //used in is checkmate
                     {
                         if(sameSide(left(),right()) && s_cell.location!=KingCell.location)
                         {
@@ -1545,34 +1586,13 @@ namespace Joueur.cs.Games.Chess.Logic
                     break;
                 }
             }
-            /*
-            if(isSafe(i2,c_cell.c_N))
-                {
-                    s_cell= new Cell (grid[i2,c_cell.c_N]);
-                    if(sameSide(i2,c_cell.c_N) && s_cell.location!=KingCell.location)
-                    {
-                        break;
-                    }                    
-                    if(s_cell.CurrentlyOccupied && s_cell.location!=KingCell.location) //no more moves to place
-                    {
-                        char name= Char.ToLower(s_cell.piece.name);
-                        if(name=='r' || name=='q')
-                        {
-                            if(c_cell == KingCell)//do not return, find pieces
-                            {
-                                KingCheckmatePieces.Add(s_cell);
-                            }
-                            return true;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                }
-            */
         }
-                
+        
+        /*  Brief: RookMoves
+        *   @param[in] c_cell cell at which the Rook is located
+        *   @pre this should have been called from returnMovesFromCell(Cell) 
+        *   @post returns all possible cell location (List<string>) that the Rook can move to
+        */                
         private List<string> RookMoves(ref Cell c_cell)
         {
             Cell s_cell= new Cell();
@@ -1684,6 +1704,11 @@ namespace Joueur.cs.Games.Chess.Logic
             */
             return toAdd;                        
         }
+        /*  Brief: BishopMoves
+        *   @param[in] c_cell cell at which the Bishop is located
+        *   @pre this should have been called from returnMovesFromCell(Cell) 
+        *   @post returns all possible cell location (List<string>) that the Bishop can move to
+        */
 
         private List<string> BishopMoves(ref Cell c_cell)
         {
@@ -1794,6 +1819,12 @@ namespace Joueur.cs.Games.Chess.Logic
             return toAdd;
 
         }
+        
+        /*  Brief: findpathtoKingRook
+        *   @param[in] c_cell cell at which the threatening Rook is located
+        *   @pre this should have been called when current king is checkmated
+        *   @post returns all possible cell location (List<string>) to nullify Rook threat
+        */
 
         private List<string> findpathtoKingRook(Cell c_cell)
         {
@@ -1929,6 +1960,12 @@ namespace Joueur.cs.Games.Chess.Logic
             return toAdd;                        
         }
 
+        /*  Brief: findpathtoKingBishop
+        *   @param[in] c_cell cell at which the threatening Bishop is located
+        *   @pre this should have been called when current king is checkmated
+        *   @post returns all possible cell location (List<string>) to nullify Bishop threat
+        */
+
         private List<string> findpathtoKingBishop(Cell c_cell)
         {
             List<string> toAdd = new List<string>();
@@ -2052,7 +2089,11 @@ namespace Joueur.cs.Games.Chess.Logic
             return toAdd;
 
         }
-
+        /*  Brief: updateBoard
+        *   @param[in] FEN string to update the board to (clears out board first)
+        *   @pre thisBoard should be 8x8 standard chess
+        *   @post updates the state of the board to the fenstring notation
+        */
         public void updateBoard(string FEN)
         {
             //clearBoard
@@ -2182,10 +2223,13 @@ namespace Joueur.cs.Games.Chess.Logic
                 row++;
             }
 
-            //generateOpponentMoveCells();
         }
-
-
+        
+        /*  Brief: isSafe
+        *   @param[in] y row to check at
+        *   @param[in] x coloumn to check at
+        *   @post returns if x,y is within bounds
+        */
         private bool isSafe(int y,int x)
         {
             if( y<0 || x<0 || y>=Size || x>=Size) //out of bounds
@@ -2195,6 +2239,11 @@ namespace Joueur.cs.Games.Chess.Logic
             }
             return true;
         }
+        /*  Brief: sameSide
+        *   @param[in] y row to check at
+        *   @param[in] x coloumn to check at
+        *   @post returns if x,y cell location is the same side as the nextToMove player (true)
+        */
         private bool sameSide(int y, int x)
         {
             //same side
@@ -2205,12 +2254,17 @@ namespace Joueur.cs.Games.Chess.Logic
             }
             return false;
         }
-
+        /*  Brief: ToString()
+        *   @post returns state of board and deadPieces()
+        */
         
         public override string ToString()
         {
            return CurrentBoard()+deadPieces()+"\n--END---\n";
         }
+        /*  Brief: DebugBoard()
+        *   @post returns locations of the board (used for debugging)
+        */
         public string DebugBoard()
         {
             string BoardRepresentation="";
@@ -2226,7 +2280,9 @@ namespace Joueur.cs.Games.Chess.Logic
             return BoardRepresentation;
 
         }
-
+        /*  Brief: CurrentBoard()
+        *   @post returns current state of board
+        */
 
         private string CurrentBoard()
         {
@@ -2253,7 +2309,9 @@ namespace Joueur.cs.Games.Chess.Logic
             BoardRepresentation+="\n";
             return BoardRepresentation;
         }
-
+        /*  Brief: OccupiedList()
+        *   @post returns occupied states of board
+        */
         private string OccupiedList()
         {
             string BoardRepresentation="";
@@ -2281,6 +2339,9 @@ namespace Joueur.cs.Games.Chess.Logic
         }
 
         
+        /*  Brief: deadPieces()
+        *   @post returns deadpieces state
+        */
         public string deadPieces()
         {
             string dead_ps = "";
