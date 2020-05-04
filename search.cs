@@ -8,18 +8,32 @@ namespace Joueur.cs.Games.Chess.Logic {
     public struct Action {
         public string move { get; set; }
         public int value { get; set; }
+        /* 
+        *   @brief copy contstructor
+        */
         public Action (Action action) {
             move = action.move;
             value = action.value;
         }
+        /* 
+        *   @brief action contstructor
+        *   @param[in]  input_move that will cause a heuristic value input_value at some point
+        *   @param[in]  input_value heuristic value
+        *   @post creates action
+        */
         public Action (string input_move,int input_value) {
             move = input_move;
             value = input_value;
         }
+        /* 
+        /   self-explanatory
+        */
         public static bool operator == (Action lhs, Action rhs) {
             return ( lhs.value == rhs.value) ? true : false;
         }
-        // override object.Equals
+        /* 
+        /   self-explanatory
+        */
         public override bool Equals(object obj)
         {
             //
@@ -37,29 +51,45 @@ namespace Joueur.cs.Games.Chess.Logic {
         }
         
         
-        // override object.GetHashCode
+        /* 
+        /   self-explanatory
+        */
         public override int GetHashCode()
         {
-            // TODO: write your implementation of GetHashCode() here
-            //throw new System.NotImplementedException();
             return base.GetHashCode();
         }
+        /* 
+        /   self-explanatory
+        */
         public static bool operator != (Action lhs, Action rhs) {
             return ( lhs.value != rhs.value) ? true : false;
         }
         
+        /* 
+        /   self-explanatory
+        */
         public static bool operator < (Action lhs, Action rhs) {
             return (lhs.value < rhs.value) ? true : false;
         }
+        /* 
+        /   self-explanatory
+        */
         public static bool operator > (Action lhs, Action rhs) {
             return (lhs.value > rhs.value) ? true : false;
         }
 
-        /*  Brief: Finds Minimum Value of its Children (max functions)
-        /   self-explan
+        /* 
+        /   self-explanatory
         */
         public override string ToString () {
             return move+","+value.ToString();
+        }
+        
+        public int CompareTo(Action other)
+        {
+          if (this.value < other.value) return 1;
+          else if (this.value > other.value) return -1;
+          else return 0;
         }
     }
     class algo {
@@ -71,15 +101,18 @@ namespace Joueur.cs.Games.Chess.Logic {
         
         public static Func<int, int, bool> lesserThanInt= (A1,A2)=> A1<A2; //formax
         public static Func<int, int, bool> greaterThanInt= (A1,A2)=> A1>A2; //formmin
-        public static string AlphaBetaSearch (ref Board b, int depth) {
+        public static Dictionary<string, int> historyTable {get;set;}
+
+        static int hard_limit;
+        public static string AlphaBetaSearch (ref Board b, int depth,ref List<string> movestoChoose) {
             //generate all valid moves
             List<string> moves= new List<string>(b.move_select(Mode.select));
-            //G.printlines(moves);
+            hard_limit= (int)(depth*0.5);
+            historyTable = new Dictionary<string, int>();
 
             List<Action> Action_list= new List<Action>();
             string test = "test";
             Action Action_Chosen= new Action(test,-1);
-            //Console.WriteLine("player: "+b.nextToMove);
             int alpha= int.MinValue;
             int beta= int.MaxValue;
 
@@ -87,7 +120,6 @@ namespace Joueur.cs.Games.Chess.Logic {
             int toPass_beta= beta;
 
             int best_valuefound= int.MinValue;
-            //int toPass_Value= int.MinValue;
             
             //Calculates at the depth, not internal nodes
             if(moves.Count()>0)
@@ -97,6 +129,7 @@ namespace Joueur.cs.Games.Chess.Logic {
                     //make new board from move
                     Board new_board = new Board(b);
                     new_board.MakeMove(moves[i]);
+
                     int value=minValue(new_board,depth-1,b.nextToMove,toPass_alpha,toPass_beta);//, ref toPass_Value);
                     Action_list.Add(new Action(moves[i],value));
                     if(value>=best_valuefound) 
@@ -109,15 +142,18 @@ namespace Joueur.cs.Games.Chess.Logic {
                     //don't look at any further children
                     if(best_valuefound>=toPass_beta)
                     {
+                        checkNewEntry(moves[i]);
+                        historyTable[moves[i]]=historyTable[moves[i]];
                         break;
                     }
                     //α := MAX(α,v)
                     toPass_alpha=best_valuefound; //this is where alpha is changed
                 }
                 
-                for(int i=0;i<Action_list.Count();i++)
+                for(int i=0;i<Action_list.Count();i++) //list out moves
                 {
-                    Console.WriteLine(Action_list[i].move +": "+ Action_list[i].value);
+                    string PossibleMove=Action_list[i].move +": "+ Action_list[i].value;
+                    movestoChoose.Add(PossibleMove);
                 }   
                 Action_Chosen= compare(Action_list,lesserThan);
             }
@@ -128,6 +164,73 @@ namespace Joueur.cs.Games.Chess.Logic {
 
             return Action_Chosen.move;
         }
+
+        
+        /*  Brief: cuttoff
+        *   @param[in] b Board to test cutoff
+        *   @param[in] depth depth currently on
+        *   @pre 
+        *   @post 
+        */
+
+        public static bool cutoffTest(ref Board b, int depth)
+        {
+            if(b.moves_available.Count() == 0 )//terminal
+            {
+                return true;                
+            }
+            if(depth<=0) //check if it can go past
+            {
+                if(depth<=-hard_limit) //hard limit
+                {
+                    return true;
+                }
+                if(b.isQuiescence()) // if quiet
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static void checkNewEntry(string move)
+        {
+            if(!historyTable.ContainsKey(move))
+            {
+                historyTable.Add(move,0);
+            }        
+        }
+
+        public static void addGoodMoves(List<string> move_list,ref PriorityQueue emptyQueue)
+        {
+            //Console.WriteLine("initial: {0}",move_list.Count);
+            foreach(KeyValuePair<string,int> move in historyTable) 
+            {
+                if(move_list.Contains(move.Key))
+                {
+                    emptyQueue.Enqueue(new Action(move.Key,move.Value));
+                    move_list.Remove(move.Key);
+                }
+            }
+            foreach(string move_key in move_list)
+            {
+                emptyQueue.Enqueue(new Action(move_key,0));                
+            }
+            /*
+            if(yes)
+            {
+                foreach(Action a in emptyQueue.data)
+                {
+                    Console.WriteLine(a);
+                }
+                    Console.WriteLine();
+                    Console.WriteLine("nextinline: {0}",emptyQueue.Peek());
+                    Console.WriteLine("final: {0}",move_list.Count);
+                    Console.WriteLine(emptyQueue.data.Count);
+
+            }*/
+        }
+
         /*  Brief: Finds Minimum Value of its Children (max functions)
         /   keep track of alpha parameter
         *   @param[in] b board to make moves from
@@ -137,34 +240,38 @@ namespace Joueur.cs.Games.Chess.Logic {
         *   @pre player must be range of enum TURN
         *   @post returns max heuristic value of its children or this node
         */
-        public static int maxValue (Board b, int depth,int player,int given_alpha,int given_beta){//, ref int given_value) {
+        public static int maxValue (Board b, int depth,int player,int given_alpha,int given_beta){
             //generate all valid moves
-            List<string> moves= new List<string>(b.move_select(Mode.select));
-            List<int> Value_list= new List<int>();
+            List<string> initial_movelist= new List<string>(b.move_select(Mode.select));
             
-            if(moves.Count() == 0 || depth==0)//terminal//dead end
+            if(cutoffTest(ref b, depth))
             {
                 int scoreCalculated=b.calculateScore(player);
-                //given_value=scoreCalculated;
                 return scoreCalculated;
             }
 
+            List<int> Value_list= new List<int>();
             int this_alpha= given_alpha;
             int this_beta= given_beta; //beta doesn't get changed
 
-            //int toPass_alpha= given_alpha;
-            //int toPass_beta= given_beta; //doesn't change here
             
             int best_valuefound= int.MinValue;
-            //int toPass_Value= int.MinValue;
+
+
+            PriorityQueue moves = new PriorityQueue();
+            //add good moves first
+            int initialSize=initial_movelist.Count();
+            addGoodMoves(initial_movelist,ref moves);
 
             int bestAction= new int();
 
-            for(int i=0;i<moves.Count();i++)
+            for(int i=0;i<initialSize;i++)
             {
                 //make new board from move
                 Board new_board = new Board(b);
-                new_board.MakeMove(moves[i]);
+                Action selected_move= moves.Dequeue();
+                new_board.MakeMove(selected_move.move);
+
                 Value_list.Add(minValue(new_board,depth-1,player,this_alpha,this_beta));//, ref toPass_Value));
                 if(Value_list.Last()>=best_valuefound) 
                 {
@@ -173,8 +280,11 @@ namespace Joueur.cs.Games.Chess.Logic {
 
                 //decides if worth to explore next children
                 // if the max value of the node being explored so far happens to be >= to beta
-                if(best_valuefound>=this_beta)
+                if(best_valuefound>=this_beta) //cut off
                 {
+                    checkNewEntry(selected_move.move);
+                    int toIncrement=(depth>0)? (int)Math.Pow(2,depth) : 0;
+                    historyTable[selected_move.move]=historyTable[selected_move.move]+ toIncrement;
                     //don't look at any further children
                     //return V
                     break;
@@ -202,33 +312,36 @@ namespace Joueur.cs.Games.Chess.Logic {
         *   @post returns mininum heuristic value of its children or this node
         */
         public static int minValue (Board b, int depth,int player,int given_alpha,int given_beta){//, ref int given_value) {
-            //Console.WriteLine("MIN:"+depth);
 
             //generate all valid moves
-            List<string> moves= new List<string>(b.move_select(Mode.select));
-            List<int> Value_list= new List<int>();
-
-            if(moves.Count() == 0 || depth==0)//terminal//dead end
+            List<string> initial_movelist= new List<string>(b.move_select(Mode.select));
+            
+            if(cutoffTest(ref b, depth))
             {
                 int scoreCalculated=b.calculateScore(player);
-                //given_value=scoreCalculated;
                 return scoreCalculated;
             }
 
+            List<int> Value_list= new List<int>();
             int this_alpha= given_alpha;
             int this_beta= given_beta;
-            //int toPass_alpha= given_alpha;
-            //int toPass_beta= given_beta;
 
             int best_valuefound= int.MaxValue;
-            //int toPass_Value= int.MaxValue;
 
             int worstAction= new int();
+
+            PriorityQueue moves = new PriorityQueue();
+            //add good moves first
+            int initialSize=initial_movelist.Count();
+            addGoodMoves(initial_movelist,ref moves);
             
-            for(int i=0;i<moves.Count();i++)
+            for(int i=0;i<initialSize;i++)
             {
                 Board new_board = new Board(b);
-                new_board.MakeMove(moves[i]);
+                Action selected_move= moves.Dequeue();
+                new_board.MakeMove(selected_move.move);
+                //updateEntry
+
                 Value_list.Add(maxValue(new_board,depth-1,player,this_alpha,this_beta));//, ref toPass_Value));
                 if(Value_list.Last()<=best_valuefound)
                 {
@@ -237,6 +350,9 @@ namespace Joueur.cs.Games.Chess.Logic {
                 // if the max value of the node being explored so far happens to be >= to beta
                 if(best_valuefound<=this_alpha)
                 {
+                    checkNewEntry(selected_move.move);
+                    int toIncrement=(depth>0)? (int)Math.Pow(2,depth) : 0;
+                    historyTable[selected_move.move]=historyTable[selected_move.move]+ toIncrement;
                     //return V
                     break;
                 }

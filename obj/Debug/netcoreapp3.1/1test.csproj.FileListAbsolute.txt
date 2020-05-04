@@ -31,3 +31,14 @@ F:\DesktopFolders\School\CS5400 AI\Game\3\3Main\bin\Debug\netcoreapp3.1\1test.ru
 F:\DesktopFolders\School\CS5400 AI\Game\3\3Main\bin\Debug\netcoreapp3.1\1test.runtimeconfig.dev.json
 F:\DesktopFolders\School\CS5400 AI\Game\3\3Main\bin\Debug\netcoreapp3.1\1test.dll
 F:\DesktopFolders\School\CS5400 AI\Game\3\3Main\bin\Debug\netcoreapp3.1\1test.pdb
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\bin\Debug\netcoreapp3.1\1test.exe
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\bin\Debug\netcoreapp3.1\1test.deps.json
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\bin\Debug\netcoreapp3.1\1test.runtimeconfig.json
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\bin\Debug\netcoreapp3.1\1test.runtimeconfig.dev.json
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\bin\Debug\netcoreapp3.1\1test.dll
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\bin\Debug\netcoreapp3.1\1test.pdb
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\obj\Debug\netcoreapp3.1\1test.csprojAssemblyReference.cache
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\obj\Debug\netcoreapp3.1\1test.AssemblyInfoInputs.cache
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\obj\Debug\netcoreapp3.1\1test.AssemblyInfo.cs
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\obj\Debug\netcoreapp3.1\1test.dll
+F:\DesktopFolders\School\CS5400 AI\Game\4\4Main\obj\Debug\netcoreapp3.1\1test.pdb

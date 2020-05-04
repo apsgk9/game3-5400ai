@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Security.Cryptography;
 
 namespace Joueur.cs.Games.Chess.Logic {
@@ -29,6 +28,7 @@ namespace Joueur.cs.Games.Chess.Logic {
         PROMOTION = 5,
         NOTHING = 6
     }
+    
 
     //-------------------------------RNG--------------------
     public class RNG {

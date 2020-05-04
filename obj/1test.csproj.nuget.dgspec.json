@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "F:\\DesktopFolders\\School\\CS5400 AI\\Game\\3\\3Main\\1test.csproj": {}
+    "F:\\DesktopFolders\\School\\CS5400 AI\\Game\\4\\4Main\\1test.csproj": {}
   },
   "projects": {
-    "F:\\DesktopFolders\\School\\CS5400 AI\\Game\\3\\3Main\\1test.csproj": {
+    "F:\\DesktopFolders\\School\\CS5400 AI\\Game\\4\\4Main\\1test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "F:\\DesktopFolders\\School\\CS5400 AI\\Game\\3\\3Main\\1test.csproj",
+        "projectUniqueName": "F:\\DesktopFolders\\School\\CS5400 AI\\Game\\4\\4Main\\1test.csproj",
         "projectName": "1test",
-        "projectPath": "F:\\DesktopFolders\\School\\CS5400 AI\\Game\\3\\3Main\\1test.csproj",
+        "projectPath": "F:\\DesktopFolders\\School\\CS5400 AI\\Game\\4\\4Main\\1test.csproj",
         "packagesPath": "C:\\Users\\Marky\\.nuget\\packages\\",
-        "outputPath": "F:\\DesktopFolders\\School\\CS5400 AI\\Game\\3\\3Main\\obj\\",
+        "outputPath": "F:\\DesktopFolders\\School\\CS5400 AI\\Game\\4\\4Main\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Marky\\AppData\\Roaming\\NuGet\\NuGet.Config",

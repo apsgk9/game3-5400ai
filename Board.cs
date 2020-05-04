@@ -1,10 +1,7 @@
 
 using System;
-using System.IO;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Joueur.cs.Games.Chess.Logic
 {
@@ -34,6 +31,8 @@ namespace Joueur.cs.Games.Chess.Logic
         //----------------------
         public List<string> moveHistory;
         public string fenstring;
+        //moves that this board can generate by nextToMove player
+        public List<string> moves_available;
 
          
          //these are used for sliding_addmoves for the forloop check
@@ -44,8 +43,8 @@ namespace Joueur.cs.Games.Chess.Logic
         
         /*  Brief: Contrustructor
         *   @param[in] s board size to be constructed (yeah only do 8)
-        *   @pre s should be 
-        *   @post 
+        *   @pre s should be 8x8 for this to work
+        *   @post makes an 8x8 board and constructs board
         */
         public Board (int s)
         {
@@ -60,6 +59,7 @@ namespace Joueur.cs.Games.Chess.Logic
             BlackPieces = new HashSet<Cell>();
             KingCheckmatePieces = new List<Cell>();
             moveHistory = new List<string>();
+            moves_available = new List<string>();
             Size = s;
             grid = new Cell [Size,Size];
             //fill grid with x and y coordinates
@@ -72,10 +72,9 @@ namespace Joueur.cs.Games.Chess.Logic
             }
         }
         
-        /*  Brief: 
-        *   @param[in] 
-        *   @pre 
-        *   @post 
+        /*  Brief: Copy Constructor
+        *   @param[in] b board to be copied.
+        *   @post makes a new copy of board from board b
         */
         public Board(Board b) //update listings
         {
@@ -112,6 +111,7 @@ namespace Joueur.cs.Games.Chess.Logic
             BlackScore= b.BlackScore;
             WhiteScore= b.WhiteScore;
             moveHistory= new List<string>(b.moveHistory);
+            moves_available = new List<string>(b.moves_available);
         }
 
 
@@ -187,7 +187,6 @@ namespace Joueur.cs.Games.Chess.Logic
                     if(enpassant==(s_part2)) //pawnmove
                     {
                         UpdateScore(TURN.WHITE,(-(int)PIECEVALUE.PAWN),MoveType.CAPTURE);
-                        //WhiteScore= WhiteScore - (int)PIECEVALUE.PAWN;
                     }
                     else if(initial[1] == 0 && final[1] == 3) //initial row
                     {
@@ -213,7 +212,6 @@ namespace Joueur.cs.Games.Chess.Logic
                 if(!(f_cell.isEmpty())) //not empty
                 {
                     UpdateScore(TURN.WHITE,(-f_cell.piece.value),MoveType.CAPTURE);
-                    //WhiteScore-=f_cell.piece.value; 
                     WhitePieces.Remove(f_cell);              
                     deadWhitePieces[f_cell.piece.name] = deadWhitePieces[f_cell.piece.name]+1;
                     halfmove=0;
@@ -253,7 +251,6 @@ namespace Joueur.cs.Games.Chess.Logic
                     if(enpassant==(s_part2)) //pawnmove
                     {
                         UpdateScore(TURN.BLACK,(-(int)PIECEVALUE.PAWN),MoveType.CAPTURE);
-                        //BlackScore= BlackScore - (int)PIECEVALUE.PAWN;
                     }
                     else if(initial[1] == 6 && final[1] == 4) //initial row //moved twice
                     {
@@ -276,7 +273,6 @@ namespace Joueur.cs.Games.Chess.Logic
                 if(!(f_cell.isEmpty())) //not empty
                 {                    
                     UpdateScore(TURN.BLACK,(-f_cell.piece.value),MoveType.CAPTURE);
-                    //BlackScore-=f_cell.piece.value; 
                     BlackPieces.Remove(f_cell);
                     deadBlackPieces[f_cell.piece.name] = deadBlackPieces[f_cell.piece.name]+1;
                     halfmove=0;
@@ -292,7 +288,6 @@ namespace Joueur.cs.Games.Chess.Logic
                 WhitePieces.Remove(grid[initial[1],initial[0]]);
             }
             //replace cell-------------------------------------------
-            //bool promoted=false;
             if(chars.Count()==5) //promote to pawn to given
             {
                 Cell new_cell= new Cell(c_cell,final[0],final[1]);
@@ -306,10 +301,8 @@ namespace Joueur.cs.Games.Chess.Logic
                     
                     UpdateScore(TURN.BLACK,(grid[final[1],final[0]].piece.value),MoveType.PROMOTION);
 
-                    //BlackScore+=grid[final[1],final[0]].piece.value; //add value
 
                     deadBlackPieces[lower] = deadBlackPieces[lower]-1;
-                    //promoted=true;
                 }
                 else
                 {
@@ -318,10 +311,8 @@ namespace Joueur.cs.Games.Chess.Logic
                     WhitePieces.Add(grid[final[1],final[0]]);
 
                     UpdateScore(TURN.WHITE,(grid[final[1],final[0]].piece.value),MoveType.PROMOTION);
-                    //WhiteScore+=grid[final[1],final[0]].piece.value; //add value
 
                     deadWhitePieces[upper] = deadWhitePieces[upper]-1;
-                    //promoted=true;
                 }                                
             }
             else
@@ -358,6 +349,68 @@ namespace Joueur.cs.Games.Chess.Logic
                 fullmove++;
             }
         }
+
+        public bool isQuiescence()
+        {
+            foreach(String s_move in moves_available)
+            {
+                MoveType moveType= checkMoveType(s_move);
+                if(moveType == MoveType.CAPTURE || moveType ==MoveType.PROMOTION)
+                {
+                    return false;                
+                }
+            }
+            return true;
+        }
+        
+        /*  Brief: checkMoveType
+        *   @param[in] move_action to check action type
+        *   @pre move_action must be valid
+        *   @pre Board must be updated
+        *   @post updates score based on parameters, sets lastmoveDone to move given
+        */
+        public MoveType checkMoveType(string move_action)
+        {
+            //setup initialization of this before moving
+            char[] chars = move_action.ToCharArray ();
+            string s_part1=(chars[0].ToString()+chars[1].ToString());
+            string s_part2=(chars[2].ToString()+chars[3].ToString());
+
+            //RETURNS col,row [0],[1]
+            //currentlocation
+            List<int> initial=Cell.convertLocation(s_part1);
+            //movetolocation
+            List<int> final=Cell.convertLocation(s_part2);
+            
+
+            Cell c_cell= grid[initial[1],initial[0]];
+            Cell f_cell= grid[final[1],final[0]];
+            
+            //----------------------------
+
+            //CheckCaptures
+            if(c_cell.piece.name == 'p' || c_cell.piece.name == 'P')//check if moved forward // check pawn
+            {
+                if(enpassant==(s_part2)) //pawnmove
+                {
+                    return MoveType.CAPTURE;
+                }
+            }
+            //CAPTURE NORMALLY
+            if(!(f_cell.isEmpty())) //not empty
+            {
+                return MoveType.CAPTURE;
+            }
+        
+            //replace cell-------------------------------------------
+            if(chars.Count()==5) //promote to pawn to given
+            {
+                return MoveType.PROMOTION;
+            }
+
+            return MoveType.NOTHING;
+        }
+
         /*  Brief: UpdatesScore
         *   @param[in] player which to update score
         *   @param[in] scoretoAdd how much to change score (can be -/+)
@@ -533,14 +586,14 @@ namespace Joueur.cs.Games.Chess.Logic
         */
         public List<string> move_select(Mode m)
         {
-            List<string> movesAllowed = new List<string>();
+            moves_available = new List<string>();
             if(nextToMove==(int)TURN.BLACK) //black's turn
             {
                 if(m.Equals(Mode.random))
                 {
                     int selectedPiece= RNG.GenerateRandomNumber(0,BlackPieces.Count()-1);    
                     Cell[] BlackPiecessasArray = BlackPieces.ToArray();
-                    movesAllowed.AddRange(returnMovesFromCell(BlackPiecessasArray[selectedPiece]));     
+                    moves_available.AddRange(returnMovesFromCell(BlackPiecessasArray[selectedPiece]));     
                 }
                 else
                 {
@@ -550,12 +603,12 @@ namespace Joueur.cs.Games.Chess.Logic
                         //return moves from all possible pieces to move
                         foreach(var p in BlackPieces)
                         {
-                            movesAllowed.AddRange(returnMovesFromCell(p));
+                            moves_available.AddRange(returnMovesFromCell(p));
                         }
                     }
                     else //king has to be safe,make a move to make the king safe
                     {
-                        movesAllowed.AddRange(returnMovesFromCell(KingCell)); //moves from king
+                        moves_available.AddRange(returnMovesFromCell(KingCell)); //moves from king
 
                         List<string> cellstomoveOn = new List<string>();
                         cellstomoveOn.Add(KingCheckmatePieces[0].location);
@@ -591,7 +644,7 @@ namespace Joueur.cs.Games.Chess.Logic
                             {
                                 if(s.Contains(piecetoEliminate))
                                 {
-                                    movesAllowed.Add(s);
+                                    moves_available.Add(s);
                                     break;
                                 }    
                             }
@@ -605,7 +658,7 @@ namespace Joueur.cs.Games.Chess.Logic
                 {
                     int selectedPiece= RNG.GenerateRandomNumber(0,WhitePieces.Count()-1);
                     Cell[] WhitePiecesasArray = BlackPieces.ToArray();
-                    movesAllowed.AddRange(returnMovesFromCell(WhitePiecesasArray[selectedPiece]));     
+                    moves_available.AddRange(returnMovesFromCell(WhitePiecesasArray[selectedPiece]));     
                 }
                 else
                 {
@@ -616,12 +669,12 @@ namespace Joueur.cs.Games.Chess.Logic
                         foreach(var p in WhitePieces)
                         {
                             
-                            movesAllowed.AddRange(returnMovesFromCell(p));
+                            moves_available.AddRange(returnMovesFromCell(p));
                         }
                     }
                     else //king has to be safe,make a move to make the king safe
                     {
-                        movesAllowed.AddRange(returnMovesFromCell(KingCell)); //moves from king
+                        moves_available.AddRange(returnMovesFromCell(KingCell)); //moves from king
 
                         List<string> cellstomoveOn = new List<string>();
                         cellstomoveOn.Add(KingCheckmatePieces[0].location);
@@ -657,7 +710,7 @@ namespace Joueur.cs.Games.Chess.Logic
                             {
                                 if(s.Contains(piecetoEliminate))
                                 {
-                                    movesAllowed.Add(s);
+                                    moves_available.Add(s);
                                     break;
                                 }    
                             }
@@ -665,7 +718,7 @@ namespace Joueur.cs.Games.Chess.Logic
                     }
                 }
             }
-            return movesAllowed;
+            return moves_available;
         }
         
         /*  Brief: Moves that can be done from cell selected
@@ -681,27 +734,21 @@ namespace Joueur.cs.Games.Chess.Logic
             switch (Char.ToLower(c_cell.piece.name))
             {
                 case 'p':
-                //Console.WriteLine("PAWNMOVES");
                 toReturn.AddRange(PawnMoves(ref c_cell));
                     break;
                 case 'n':
-                //Console.WriteLine("KNIGHTMOVES");
                 toReturn.AddRange(KnightMoves(ref c_cell));
                     break;
                 case 'k':
-                //Console.WriteLine("KINGMOVES");
                 toReturn.AddRange(KingMoves(ref c_cell));
                     break;
                 case 'r':
-                //Console.WriteLine("ROOKMOVES");
                 toReturn.AddRange( RookMoves(ref c_cell));
                     break;
                 case 'b':
-                //Console.WriteLine("BISHOPMOVES");
                 toReturn.AddRange(BishopMoves(ref c_cell));
                     break;
                 case 'q':
-                //Console.WriteLine("QUEENMOVES");
                 toReturn.AddRange(BishopMoves(ref c_cell));
                 toReturn.AddRange(RookMoves(ref c_cell));
                     break;
@@ -737,7 +784,7 @@ namespace Joueur.cs.Games.Chess.Logic
                 char name= Char.ToLower(grid[c_cell.r_N+toMove,c_cell.c_N+1].piece.name);
                 if(name=='p')
                 {                    
-                    if(c_cell == KingCell)//do not return, find pieces
+                    if(c_cell == KingCell)//do not return, find pieces //todo figure out why I wrote this
                     {
                         KingCheckmatePieces.Add(grid[c_cell.r_N+toMove,c_cell.c_N+1]);
                     }
@@ -753,7 +800,7 @@ namespace Joueur.cs.Games.Chess.Logic
                 char name= Char.ToLower(grid[c_cell.r_N+toMove,c_cell.c_N-1].piece.name);
                 if(name=='p')
                 {                    
-                    if(c_cell == KingCell)//do not return, find pieces
+                    if(c_cell == KingCell)//do not return, find pieces //todo figure out why I wrote this
                     {
                         KingCheckmatePieces.Add(grid[c_cell.r_N+toMove,c_cell.c_N-1]);
                     }
@@ -775,7 +822,7 @@ namespace Joueur.cs.Games.Chess.Logic
                     char name= Char.ToLower(grid[c_cell.r_N+KnM_R[i_k],c_cell.c_N+KnM_C[i_k]].piece.name);
                     if(name=='n')
                     {                    
-                        if(c_cell == KingCell)//do not return, find pieces
+                        if(c_cell == KingCell)//do not return, find pieces //todo figure out why I wrote this
                         {
                             KingCheckmatePieces.Add(grid[c_cell.r_N+KnM_R[i_k],c_cell.c_N+KnM_C[i_k]]);
                         }
@@ -817,7 +864,7 @@ namespace Joueur.cs.Games.Chess.Logic
             #endregion
             #region checkRook
             //checks if rook can reach this cell
-            
+            //up
             kingpath=3;
             Sliding_AddMoves(c_cell,ref dummylist,c_cell.r_N-1,0,
             forcheckCritera_negative,false,0,ref kingpath);
@@ -860,7 +907,7 @@ namespace Joueur.cs.Games.Chess.Logic
                     char name= Char.ToLower(grid[c_cell.r_N+KM_R[i_king],c_cell.c_N+KM_C[i_king]].piece.name);
                     if(name=='k')
                     {
-                        if(c_cell == KingCell)//do not return, find pieces
+                        if(c_cell == KingCell)//do not return, find pieces //todo figure out why I wrote this
                         {
                             KingCheckmatePieces.Add(grid[c_cell.r_N+KM_R[i_king],c_cell.c_N+KM_C[i_king]]);
                         }
@@ -879,8 +926,6 @@ namespace Joueur.cs.Games.Chess.Logic
 
             grid[c_movetoCell.r_N,c_movetoCell.c_N]= c_cell;
             grid[c_cell.r_N,c_cell.c_N]= Cell.emptyCell(c_cell.c_N,c_cell.r_N);
-            //Console.WriteLine(this);
-            //test if checkmate
             if(c_cell.location==KingCell.location)
             {
                 KingisNowCheckmateifMoved = isCheckmate(c_movetoCell);
@@ -998,7 +1043,6 @@ namespace Joueur.cs.Games.Chess.Logic
                     if(c_cell.r_N+toMove == 0 || c_cell.r_N+toMove==(Size-1))
                     { //promote move
                         toAdd.AddRange(promotePiece(grid[c_cell.r_N+toMove,c_cell.c_N+1].location));
-
                     }
                     else
                     {
@@ -1247,21 +1291,25 @@ namespace Joueur.cs.Games.Chess.Logic
             }
             else if(mode==2) //Check
             {
+                //up-left
                 left= ()=>c_cell.r_N-i;
                 right=()=>c_cell.c_N-i;
             }
             else if(mode==3)
             {
+                //down-right
                 left= ()=>c_cell.r_N+i;
                 right=()=>c_cell.c_N+i;
             }
             else if(mode==4)
             {
+                //down-left
                 left= ()=>c_cell.r_N+i;
                 right=()=>c_cell.c_N-i;
             }
             else if(mode==5)
             {
+                //up-right
                 left= ()=>c_cell.r_N-i;
                 right=()=>c_cell.c_N+i;
             }
@@ -1324,7 +1372,7 @@ namespace Joueur.cs.Games.Chess.Logic
                             char name= Char.ToLower(s_cell.piece.name);
                             if( (kingPath==3 && name=='r') || (kingPath==4 && name=='b') || name=='q')
                             {
-                                if(c_cell.location == KingCell.location)//do not return, find pieces
+                                if(c_cell.location == KingCell.location)//do not return, find pieces //todo figure out why I wrote this
                                 {
                                     KingCheckmatePieces.Add(s_cell);
                                 }
@@ -1384,6 +1432,10 @@ namespace Joueur.cs.Games.Chess.Logic
         {
             List<string> toAdd = new List<string>();
             int dummy=0;
+            //up-left
+            //down-right
+            //down-left
+            //up-right
             Sliding_AddMoves(c_cell,ref toAdd,1,int.MaxValue,
             forcheckCritera_positive,true,2,ref dummy);            
             Sliding_AddMoves(c_cell,ref toAdd,1,int.MaxValue,

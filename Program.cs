@@ -49,16 +49,21 @@ namespace Joueur.cs.Games.Chess
             //8/5k1q/3P4/6K1/PP6/4P3/4P3/8 b - - 3 43
             //rnb3n1/pppp4/5k2/8/8/P3P3/PBPPP1K1/R7 b - - 2 21
             //r3k2R/pp6/1n6/2p1p3/8/N3K1P1/PPPBPP2/8 b q - 2 20
-            string FEN= "r3k2R/pp6/1n6/2p1p3/8/N3K1P1/PPPBPP2/8 b q - 2 20";
+            string FEN= "r1b1k1nr/pp1p1p1p/2pb4/4p1Bq/1n1P4/2NQ3N/PPP1PPPP/R3KBR1 w Qkq - 3 11";
             b.updateBoard(FEN);
+            List<string> moves_chosen=new List<string>();
 
-            string selectedMove = algo.AlphaBetaSearch(ref b,2);
+            string selectedMove = algo.AlphaBetaSearch(ref b,2,ref moves_chosen);
 
 
             Console.WriteLine("--------------------------");
             Console.WriteLine(b);
             Console.WriteLine("SCORE: {0},{1}",b.BlackScore,b.WhiteScore);
             Console.WriteLine("**************************");
+            for(int i=0;i<moves_chosen.Count();i++) //list out moves
+            {
+                Console.WriteLine(moves_chosen[i]);
+            }   
             Console.WriteLine(selectedMove);
             b.MakeMove(selectedMove);
             //Console.WriteLine(b.fenstring);
